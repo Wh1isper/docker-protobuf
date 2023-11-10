@@ -118,6 +118,7 @@ FROM alpine:${ALPINE_VERSION} as packer
 RUN apk add --no-cache curl
 
 ARG UPX_VERSION
+ARG TARGETARCH
 RUN mkdir -p /upx && curl -sSL https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-${TARGETARCH}_linux.tar.xz | tar xJ --strip 1 -C /upx && \
     install -D /upx/upx /usr/local/bin/upx
 

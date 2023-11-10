@@ -30,78 +30,31 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-    -
-      name: Build latest image for testing
-      id: docker_build
-      uses: docker/build-push-action@v4
-      with:
-        # Only testing with amd64
-        platforms: linux/amd64
-        context: ./
-        file: ./Dockerfile
-        push: false
-        tags: ${{ secrets.DOCKER_USERNAME }}/protobuf:latest
+  
+    - name: Build the Docker image
+      run: docker buildx build -t build --load .
     
-    - 
-      name: Test
+    # TODO: https://github.com/jaegertracing/docker-protobuf/issues/30
+    - name: Test docker image
+      run : |
+        echo "Please add tests here"
+    
+
+    - name: Push the Docker image
+      if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
       run: |
-        echo "Hello World"
-    -
-      name: Set tags to env
-      run: |
-        function set_env {
-          echo "${1}=${2}" >> $GITHUB_ENV
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+        function build_and_push {
+          docker buildx build -t "jaegertracing/protobuf:${1}" --platform linux/amd64,linux/arm64/v8 --push .
         }
-        set_env "PUSH_LATEST" "FALSE"
-        set_env "PUSH_TAG" "FALSE"
 
         if [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
-          set_env "PUSH_LATEST" "latest"
+        build_and_push "latest"
         elif [[ "${GITHUB_REF}" =~ refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-          TAG="${GITHUB_REF#"refs/tags/v"}"
-          set_env "PUSH_LATEST" "latest"
-          set_env "PUSH_TAG" "${TAG}"
+            TAG="${GITHUB_REF#"refs/tags/v"}"
+            build_and_push "${TAG}"
+            build_and_push "latest"
         else
-          set_env "PUSH_TAG" "${GITHUB_REF#"refs/tags/"}"
+          build_and_push "${GITHUB_REF#"refs/tags/"}"
         fi
-
-    -
-      name: Push latest image
-      if:  ${{ env.PUSH_LATEST }} == 'latest'
-      uses: docker/build-push-action@v4
-      with:
-        platforms: linux/amd64,linux/arm64/v8
-        context: ./
-        file: ./Dockerfile
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/protobuf:latest
-    - name: Push tagged image
-      if: ${{ env.PUSH_TAG }} != 'FALSE'
-      uses: docker/build-push-action@v4
-      with:
-        platforms: linux/amd64,linux/arm64/v8
-        context: ./
-        file: ./Dockerfile
-        push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/protobuf:${{ env.PUSH_TAG }}
-        
-    # - name: Build the Docker image
-    #   run: docker build . -t build
-    # - name: Push the Docker image
-    #   if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
-    #   run: |
-    #     echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-    #     function tag_and_push {
-    #       docker tag build "jaegertracing/protobuf:${1}" && docker push "jaegertracing/protobuf:${1}"
-    #     }
-
-    #     if [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
-    #       tag_and_push "latest"
-    #     elif [[ "${GITHUB_REF}" =~ refs/tags/v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-    #         TAG="${GITHUB_REF#"refs/tags/v"}"
-    #         tag_and_push "${TAG}"
-    #         tag_and_push "latest"
-    #     else
-    #       tag_and_push "${GITHUB_REF#"refs/tags/"}"
-    #     fi

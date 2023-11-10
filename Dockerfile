@@ -9,7 +9,6 @@ ARG PROTOC_GEN_GO_VERSION=1.31.0
 ARG PROTOC_GEN_GOGO_VERSION=b03c65ea87cdc3521ede29f62fe3ce239267c1bc
 ARG PROTOC_GEN_LINT_VERSION=0.2.4
 ARG UPX_VERSION=3.96
-ARG TARGETARCH
 
 FROM alpine:${ALPINE_VERSION} as protoc_base
 RUN apk add --no-cache build-base curl cmake autoconf libtool git zlib-dev linux-headers && \
@@ -91,6 +90,7 @@ RUN mkdir -p ${GOPATH}/src/github.com/gogo/protobuf && \
     install -D ./gogoproto/gogo.proto /out/usr/include/github.com/gogo/protobuf/gogoproto/gogo.proto
 
 ARG PROTOC_GEN_LINT_VERSION
+ARG TARGETARCH
 RUN cd / && \
     curl -sSLO https://github.com/ckaznocha/protoc-gen-lint/releases/download/v${PROTOC_GEN_LINT_VERSION}/protoc-gen-lint_linux_${TARGETARCH}.zip && \
     mkdir -p /protoc-gen-lint-out && \
